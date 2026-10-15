@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IRCTC – Login / Register</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Noto Sans',Arial,sans-serif;background:#f0f4f8;min-height:100vh;display:flex;flex-direction:column;}
+    .top-bar{background:#1a3a6b;padding:8px 20px;display:flex;align-items:center;gap:14px;}
+    .top-bar .logo{background:#fff;border-radius:4px;padding:4px 10px;}
+    .top-bar .logo span{font-size:20px;font-weight:900;color:#1a3a6b;letter-spacing:2px;}
+    .top-bar .tagline{color:rgba(255,255,255,0.7);font-size:11px;}
+
+    .main{flex:1;display:flex;align-items:stretch;min-height:calc(100vh - 48px);}
+
+    /* LEFT PANEL */
+    .left-panel{
+      flex:1;background:linear-gradient(160deg,#1a3a6b 0%,#0d2550 60%,#0a1e40 100%);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:40px 30px;position:relative;overflow:hidden;min-width:320px;
+    }
+    .left-panel::before{
+      content:'';position:absolute;inset:0;
+      background:url('assets/vande_bharat.jpg') center/cover no-repeat;
+      opacity:0.22;
+    }
+    .left-content{position:relative;z-index:1;text-align:center;color:#fff;}
+    .left-content .irctc-big{font-size:52px;font-weight:900;letter-spacing:4px;line-height:1;}
+    .left-content .irctc-hindi{font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px;}
+    .left-content .divider{width:60px;height:3px;background:#e07b00;margin:18px auto;}
+    .left-content h2{font-size:18px;font-weight:700;margin-bottom:8px;}
+    .left-content p{font-size:12px;color:rgba(255,255,255,0.65);line-height:1.7;max-width:280px;}
+    .features{margin-top:24px;text-align:left;display:inline-block;}
+    .feature-item{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px;color:rgba(255,255,255,0.8);}
+    .feature-item .fi-icon{width:28px;height:28px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+    .govt-badge{margin-top:28px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:10px 16px;text-align:center;}
+    .govt-badge .gb-top{font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;}
+    .govt-badge .gb-name{font-size:13px;font-weight:700;color:#fff;margin-top:2px;}
+
+    /* RIGHT PANEL */
+    .right-panel{width:440px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 36px;box-shadow:-4px 0 20px rgba(0,0,0,0.08);}
+    .form-logo{font-size:14px;color:#1a3a6b;font-weight:700;margin-bottom:24px;text-align:center;}
+    .form-logo span{display:block;font-size:11px;color:#888;font-weight:400;margin-top:2px;}
+
+    /* TABS */
+    .tab-row{display:flex;border:1px solid #dde3ed;border-radius:6px;overflow:hidden;margin-bottom:24px;width:100%;}
+    .tab-btn{flex:1;padding:11px;font-size:13px;font-weight:600;border:none;background:#f7f9fc;color:#777;cursor:pointer;transition:all 0.2s;outline:none;}
+    .tab-btn.active{background:#1a3a6b;color:#fff;}
+
+    /* FORM */
+    .auth-form{width:100%;display:none;}
+    .auth-form.active{display:block;}
+    .field{margin-bottom:14px;}
+    .field label{display:block;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:5px;}
+    .field input{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:4px;font-size:13px;color:#222;outline:none;transition:border-color 0.2s;font-family:inherit;}
+    .field input:focus{border-color:#1a3a6b;box-shadow:0 0 0 2px rgba(26,58,107,0.1);}
+    .field .input-wrap{position:relative;}
+    .field .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:#888;background:none;border:none;}
+
+    .btn-submit{width:100%;padding:12px;background:linear-gradient(135deg,#e07b00,#c96800);color:#fff;border:none;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;text-transform:uppercase;transition:opacity 0.2s;font-family:inherit;margin-top:4px;}
+    .btn-submit:hover{opacity:0.9;}
+    .btn-submit:disabled{background:#ccc;cursor:not-allowed;}
+
+    .divider-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:#aaa;font-size:12px;}
+    .divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:#e0e0e0;}
+
+    .forgot-link{text-align:right;margin-top:-8px;margin-bottom:12px;}
+    .forgot-link a{font-size:11px;color:#1a3a6b;text-decoration:none;}
+    .forgot-link a:hover{text-decoration:underline;}
+
+    .terms-text{font-size:10px;color:#999;text-align:center;margin-top:10px;line-height:1.5;}
+    .terms-text a{color:#1a3a6b;text-decoration:none;}
+
+    .msg-box{padding:10px 14px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:14px;display:none;}
+    .msg-box.error{background:#ffebee;color:#c62828;border:1px solid #ffcdd2;}
+    .msg-box.success{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;}
+
+    .pw-strength{height:3px;border-radius:2px;margin-top:5px;transition:all 0.3s;background:#eee;}
+    .pw-strength.weak{background:linear-gradient(90deg,#f44336 30%,#eee 30%);}
+    .pw-strength.medium{background:linear-gradient(90deg,#ff9800 60%,#eee 60%);}
+    .pw-strength.strong{background:#4caf50;}
+
+    .loading-ring{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    footer{background:#0a1e40;color:rgba(255,255,255,0.4);font-size:10px;text-align:center;padding:8px;flex-shrink:0;}
+
+    @media(max-width:700px){
+      .left-panel{display:none;}
+      .right-panel{width:100%;box-shadow:none;}
+    }
+  </style>
+</head>
+<body>
+<div class="top-bar">
+  <div class="logo"><span>IRCTC</span></div>
+  <div class="tagline">🚂 Indian Railways — Ministry of Railways, Government of India</div>
+  <a href="index.html" style="margin-left:auto;color:rgba(255,255,255,0.7);font-size:11px;text-decoration:none;">← Back to Home</a>
+</div>
+
+<div class="main">
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="left-content">
+      <div class="irctc-big">IRCTC</div>
+      <div class="irctc-hindi">भारतीय रेलवे खानपान एवं पर्यटन निगम</div>
+      <div class="divider"></div>
+      <h2>India's #1 Rail Booking Portal</h2>
+      <p>Book train tickets, check PNR status, plan your journey across India with ease.</p>
+      <div class="features">
+        <div class="feature-item"><div class="fi-icon">🚆</div> 13,000+ trains across India</div>
+        <div class="feature-item"><div class="fi-icon">🎫</div> Instant e-ticket generation</div>
+        <div class="feature-item"><div class="fi-icon">💰</div> Multiple payment options</div>
+        <div class="feature-item"><div class="fi-icon">🔒</div> Secure 256-bit SSL booking</div>
+        <div class="feature-item"><div class="fi-icon">📱</div> SMS & Email confirmation</div>
+      </div>
+      <div class="govt-badge">
+        <div class="gb-top">Government of India Enterprise</div>
+        <div class="gb-name">Ministry of Railways</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="form-logo">
+      Welcome to IRCTC
+      <span>Please login or create an account to book tickets</span>
+    </div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">🔑 LOGIN</button>
+      <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">✨ REGISTER</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form class="auth-form active" id="loginForm" onsubmit="doLogin(event)">
+      <div class="msg-box" id="loginMsg"></div>
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="loginEmail" placeholder="your@email.com" required autocomplete="email"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="input-wrap">
+          <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('loginPassword',this)">👁️</button>
+        </div>
+      </div>
+      <div class="forgot-link"><a href="#" onclick="showForgot()">Forgot Password?</a></div>
+      <button type="submit" class="btn-submit" id="btnLogin">LOGIN</button>
+      <div class="terms-text">By logging in you agree to <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></div>
+    </form>
+
+    <!-- SIGNUP FORM -->
+    <form class="auth-form" id="signupForm" onsubmit="doSignup(event)">
+      <div class="msg-box" id="signupMsg"></div>
+      <div class="field">
+        <label>Full Name *</label>
+        <input type="text" id="signupName" placeholder="As per government ID" required autocomplete="name"/>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="field" style="flex:1;">
+          <label>Email Address *</label>
+          <input type="email" id="signupEmail" placeholder="your@email.com" required autocomplete="email"/>
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Mobile Number *</label>
+          <input type="tel" id="signupMobile" placeholder="10-digit" maxlength="10" required autocomplete="tel"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Password *</label>
+        <div class="input-wrap">
+          <input type="password" id="signupPassword" placeholder="Min 8 characters" required
+            oninput="checkPwStrength(this)" autocomplete="new-password"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('signupPassword',this)">👁️</button>
+        </div>
+        <div class="pw-strength" id="pwStrength"></div>
+      </div>
+      <div class="field">
+        <label>Confirm Password *</label>
+        <input type="password" id="signupConfirm" placeholder="Re-enter password" required autocomplete="new-password"/>
+      </div>
+      <button type="submit" class="btn-submit" id="btnSignup">CREATE ACCOUNT</button>
+      <div class="terms-text">By registering you agree to <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a> of IRCTC</div>
+    </form>
+  </div>
+</div>
+
+<footer>© 2026 IRCTC Ltd. (A Government of India Enterprise) — All Rights Reserved</footer>
+
+<script>
+const API = 'http://localhost:8090/api';
+
+function switchTab(tab) {
+  document.getElementById('loginForm').classList.toggle('active', tab === 'login');
+  document.getElementById('signupForm').classList.toggle('active', tab === 'signup');
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+  clearMsgs();
+}
+
+function clearMsgs() {
+  ['loginMsg','signupMsg'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.display = 'none'; el.textContent = '';
+  });
+}
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'msg-box ' + type;
+  el.style.display = 'block';
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+
+function checkPwStrength(inp) {
+  const bar = document.getElementById('pwStrength');
+  const v = inp.value;
+  if (!v) { bar.className = 'pw-strength'; return; }
+  const strong = v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v);
+  const medium = v.length >= 6 && (/[A-Z]/.test(v) || /[0-9]/.test(v));
+  bar.className = 'pw-strength ' + (strong ? 'strong' : medium ? 'medium' : 'weak');
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnLogin');
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) { showMsg('loginMsg','Please fill all fields','error'); return; }
+
+  btn.innerHTML = '<span class="loading-ring"></span> Logging in...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password})
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem('irctc_token', data.token);
+      localStorage.setItem('irctc_user', JSON.stringify(data.user));
+      showMsg('loginMsg', '✅ Login successful! Redirecting...', 'success');
+      setTimeout(() => {
+        const redirect = sessionStorage.getItem('loginRedirect') || 'index.html';
+        sessionStorage.removeItem('loginRedirect');
+        window.location.href = redirect;
+      }, 900);
+    } else {
+      showMsg('loginMsg', '❌ ' + (data.message || 'Invalid email or password'), 'error');
+      btn.innerHTML = 'LOGIN'; btn.disabled = false;
+    }
+  } catch(err) {
+    showMsg('loginMsg', '⚠️ Server not reachable. Please start the backend server.', 'error');
+    btn.innerHTML = 'LOGIN'; btn.disabled = false;
+  }
+}
+
+async function doSignup(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSignup');
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const mobile = document.getElementById('signupMobile').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const confirm = document.getElementById('signupConfirm').value;
+
+  if (!name || !email || !mobile || !password) { showMsg('signupMsg','All fields are required','error'); return; }
+  if (mobile.length !== 10 || isNaN(mobile)) { showMsg('signupMsg','Enter a valid 10-digit mobile number','error'); return; }
+  if (password.length < 6) { showMsg('signupMsg','Password must be at least 6 characters','error'); return; }
+  if (password !== confirm) { showMsg('signupMsg','Passwords do not match','error'); return; }
+
+  btn.innerHTML = '<span class="loading-ring"></span> Creating account...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/auth/signup`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, email, mobile, password})
+    });
+    const data = await res.json();
+    if (data.success) {
+      showMsg('signupMsg', '✅ Account created! Please login now.', 'success');
+      setTimeout(() => switchTab('login'), 1500);
+      document.getElementById('loginEmail').value = email;
+    } else {
+      showMsg('signupMsg', '❌ ' + (data.message || 'Registration failed'), 'error');
+    }
+  } catch(err) {
+    showMsg('signupMsg', '⚠️ Server not reachable. Make sure the C++ backend is running on port 8090.', 'error');
+  }
+  btn.innerHTML = 'CREATE ACCOUNT'; btn.disabled = false;
+}
+
+function showForgot() {
+  showMsg('loginMsg', 'Password reset: Please contact IRCTC Helpdesk at 139', 'error');
+}
+
+// Auto-redirect if already logged in
+if (localStorage.getItem('irctc_token')) {
+  window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>

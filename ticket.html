@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IRCTC E-Ticket</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Noto Sans',Arial,sans-serif;background:#e8edf5;min-height:100vh;padding:20px;}
+    .no-print-bar{background:#1a3a6b;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:12px;border-radius:6px;margin-bottom:16px;}
+    .no-print-bar a{color:rgba(255,255,255,0.7);text-decoration:none;font-size:12px;}
+    .no-print-bar .btn-print{background:#e07b00;color:#fff;border:none;padding:8px 20px;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;}
+    .no-print-bar .btn-home{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);padding:8px 16px;border-radius:3px;font-size:12px;cursor:pointer;}
+
+    /* TICKET WRAPPER */
+    .ticket-wrapper{max-width:800px;margin:0 auto;}
+
+    /* WL TIMER BANNER */
+    .wl-banner{background:#fff3e0;border:2px solid #e07b00;border-radius:8px;padding:16px 20px;margin-bottom:16px;display:none;}
+    .wl-banner.show{display:block;}
+    .wl-title{font-size:14px;font-weight:700;color:#e07b00;margin-bottom:6px;}
+    .wl-desc{font-size:12px;color:#5a3e00;line-height:1.6;margin-bottom:12px;}
+    .timer-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+    .timer-display{background:#1a3a6b;color:#fff;border-radius:8px;padding:10px 20px;font-size:26px;font-weight:900;letter-spacing:4px;font-family:monospace;}
+    .timer-label{font-size:11px;color:#888;}
+    .timer-status{font-size:12px;color:#e07b00;font-weight:600;animation:pulse 1s ease-in-out infinite alternate;}
+    @keyframes pulse{from{opacity:0.6}to{opacity:1}}
+
+    /* REFUND BANNER */
+    .refund-banner{background:#ffebee;border:2px solid #c62828;border-radius:8px;padding:20px;margin-bottom:16px;display:none;}
+    .refund-banner.show{display:block;}
+    .refund-title{font-size:16px;font-weight:700;color:#c62828;margin-bottom:8px;}
+    .refund-steps{margin-top:12px;}
+    .refund-step{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;color:#555;}
+    .refund-step .step-dot{width:8px;height:8px;border-radius:50%;background:#c62828;flex-shrink:0;}
+
+    /* CONFIRMED BANNER */
+    .confirm-banner{background:#e8f5e9;border:2px solid #2e7d32;border-radius:8px;padding:20px;margin-bottom:16px;display:none;}
+    .confirm-banner.show{display:block;}
+    .confirm-banner .cb-title{font-size:16px;font-weight:700;color:#2e7d32;}
+
+    /* TICKET CARD */
+    .ticket-card{background:#fff;border:1px solid #ccc;border-radius:6px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+    .ticket-top{background:linear-gradient(135deg,#1a3a6b,#0d2550);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+    .ticket-logo{font-size:22px;font-weight:900;letter-spacing:2px;}
+    .ticket-logo small{display:block;font-size:9px;font-weight:400;color:rgba(255,255,255,0.65);}
+    .ticket-govt{text-align:right;font-size:10px;color:rgba(255,255,255,0.65);}
+    .ticket-govt strong{display:block;font-size:12px;color:#fff;}
+
+    .pnr-section{background:#f7f9fc;border-bottom:1px solid #dde3ed;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+    .pnr-block .pnr-lbl{font-size:10px;color:#888;text-transform:uppercase;}
+    .pnr-block .pnr-val{font-size:22px;font-weight:900;color:#1a3a6b;letter-spacing:3px;font-family:monospace;}
+    .status-badge{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:800;letter-spacing:1px;}
+    .status-CNF{background:#e8f5e9;color:#1b5e20;border:2px solid #2e7d32;}
+    .status-WL{background:#fff9c4;color:#8d6e00;border:2px solid #fbc02d;}
+    .status-RAC{background:#fff8e1;color:#b78103;border:2px solid #ffe082;}
+    .status-PARTIAL_CNF{background:#e8f5e9;color:#1b5e20;border:2px solid #2e7d32;}
+    .status-CANCELLED{background:#ffebee;color:#c62828;border:2px solid #c62828;}
+
+    .journey-section{padding:16px 20px;border-bottom:1px solid #eee;}
+    .journey-row{display:flex;align-items:center;gap:0;justify-content:space-between;}
+    .station-block{text-align:center;flex:1;}
+    .station-block .time{font-size:24px;font-weight:800;color:#1a3a6b;}
+    .station-block .stn-code{font-size:14px;font-weight:700;color:#333;margin-top:2px;}
+    .station-block .stn-name{font-size:10px;color:#888;margin-top:2px;}
+    .journey-mid{flex:2;text-align:center;padding:0 10px;}
+    .journey-mid .dur{font-size:11px;color:#888;margin-bottom:4px;}
+    .journey-mid .track{height:2px;background:linear-gradient(90deg,#1a3a6b,#e07b00,#1a3a6b);border-radius:2px;position:relative;}
+    .journey-mid .track::before,.journey-mid .track::after{content:'●';position:absolute;top:-6px;font-size:8px;color:#1a3a6b;}
+    .journey-mid .track::before{left:-2px;}
+    .journey-mid .track::after{right:-2px;}
+    .journey-mid .train-name{font-size:12px;font-weight:700;color:#1a3a6b;margin-top:6px;}
+    .journey-mid .train-no{font-size:10px;color:#888;}
+
+    .meta-row{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid #eee;border-bottom:1px solid #eee;}
+    .meta-cell{flex:1;min-width:120px;padding:10px 20px;border-right:1px solid #eee;}
+    .meta-cell:last-child{border-right:none;}
+    .meta-cell .mc-lbl{font-size:9px;text-transform:uppercase;color:#888;letter-spacing:0.5px;}
+    .meta-cell .mc-val{font-size:13px;font-weight:700;color:#222;margin-top:3px;}
+
+    .pax-section{padding:16px 20px;}
+    .pax-section h3{font-size:12px;font-weight:700;text-transform:uppercase;color:#1a3a6b;letter-spacing:0.5px;margin-bottom:10px;border-bottom:2px solid #1a3a6b;padding-bottom:6px;}
+    .pax-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .pax-table th{background:#1a3a6b;color:#fff;padding:7px 10px;text-align:left;font-size:11px;}
+    .pax-table td{padding:7px 10px;border-bottom:1px solid #eee;}
+    .pax-table tr:nth-child(even) td{background:#f7f9fc;}
+    .pax-table .cnf{color:#2e7d32;font-weight:700;}
+    .pax-table .wl{color:#e07b00;font-weight:700;}
+
+    .fare-qr-row{display:flex;gap:20px;padding:16px 20px;border-top:1px solid #eee;flex-wrap:wrap;}
+    .fare-block{flex:1;}
+    .fare-block h3{font-size:11px;font-weight:700;text-transform:uppercase;color:#1a3a6b;letter-spacing:0.5px;margin-bottom:8px;}
+    .fare-line{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;color:#555;}
+    .fare-total{display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#1a3a6b;border-top:1px solid #ccc;margin-top:6px;padding-top:6px;}
+    .qr-block{text-align:center;}
+    .qr-block p{font-size:9px;color:#888;margin-top:6px;}
+
+    .ticket-footer{background:#f7f9fc;border-top:1px solid #eee;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#888;flex-wrap:wrap;gap:6px;}
+    .ticket-footer .booked-at{font-size:10px;}
+    .ticket-footer .helpline{font-weight:700;color:#1a3a6b;}
+
+    .important-note{background:#fff8e1;border-left:4px solid #e07b00;padding:10px 14px;margin:12px 20px;font-size:11px;color:#5a4000;line-height:1.6;}
+
+    @media print {
+      body{background:#fff;padding:0;}
+      .no-print-bar,.wl-banner,.refund-banner,.confirm-banner{display:none!important;}
+      .ticket-card{box-shadow:none;border:1px solid #999;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="no-print-bar">
+  <strong style="font-size:14px;">🎫 IRCTC E-Ticket</strong>
+  <a href="index.html">← Home</a>
+  <button class="btn-home" onclick="window.location.href='index.html'">🏠 Book Another</button>
+  <button class="btn-print" onclick="window.print()">🖨️ Print / Download PDF</button>
+</div>
+
+<!-- WL WAITING BANNER -->
+<div class="wl-banner" id="wlBanner">
+  <div class="wl-title">⏳ Waitlist Confirmation in Progress</div>
+  <div class="wl-desc">Your ticket is currently on the <strong>Waiting List</strong>. The system is attempting to confirm your berth. You will be notified within the countdown below. If confirmed, your ticket status will update to <strong>CNF</strong>. If not confirmed, a full refund will be initiated automatically.</div>
+  <div class="timer-row">
+    <div>
+      <div class="timer-label">Time remaining for confirmation</div>
+      <div class="timer-display" id="timerDisplay">00:30</div>
+    </div>
+    <div class="timer-status" id="timerStatus">🔄 Checking berth availability...</div>
+  </div>
+</div>
+
+<!-- REFUND BANNER -->
+<div class="refund-banner" id="refundBanner">
+  <div class="refund-title">❌ Ticket Not Confirmed — Refund Initiated</div>
+  <p style="font-size:12px;color:#555;margin-bottom:10px;">Unfortunately, your waitlisted ticket could not be confirmed. A full refund has been initiated as per IRCTC refund policy.</p>
+  <div class="refund-steps">
+    <div class="refund-step"><div class="step-dot"></div> Refund Amount: <strong id="refundAmt" style="color:#c62828;">₹0</strong></div>
+    <div class="refund-step"><div class="step-dot"></div> Refund will be credited to your original payment method within <strong>5–7 working days</strong></div>
+    <div class="refund-step"><div class="step-dot" style="background:#4caf50;"></div> Refund Reference: <strong id="refundRef" style="color:#2e7d32;">—</strong></div>
+    <div class="refund-step"><div class="step-dot"></div> For queries: Call IRCTC Helpdesk <strong>139</strong> or email <strong>care@irctc.co.in</strong></div>
+  </div>
+  <button onclick="window.location.href='index.html'" style="margin-top:14px;background:#c62828;color:#fff;border:none;padding:10px 24px;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;">🏠 Return to Home</button>
+</div>
+
+<!-- CONFIRM BANNER -->
+<div class="confirm-banner" id="confirmBanner">
+  <div class="cb-title">🎉 Congratulations! Your Ticket is CONFIRMED!</div>
+  <p style="font-size:12px;color:#555;margin-top:6px;">Your berth has been confirmed. Please carry this ticket and a valid photo ID for travel. Have a safe journey!</p>
+</div>
+
+<!-- TICKET CARD -->
+<div class="ticket-wrapper">
+<div class="ticket-card" id="ticketCard">
+  <div class="ticket-top">
+    <div class="ticket-logo">IRCTC<small>Indian Railway Catering & Tourism Corporation</small></div>
+    <div class="ticket-govt"><strong>Indian Railways</strong>Ministry of Railways, Govt. of India</div>
+  </div>
+
+  <div class="pnr-section">
+    <div class="pnr-block">
+      <div class="pnr-lbl">PNR Number</div>
+      <div class="pnr-val" id="tktPNR">—</div>
+    </div>
+    <div class="status-badge" id="tktStatusBadge">—</div>
+  </div>
+
+  <div class="journey-section">
+    <div class="journey-row">
+      <div class="station-block">
+        <div class="time" id="tktDepTime">—</div>
+        <div class="stn-code" id="tktFromCode">—</div>
+        <div class="stn-name" id="tktFromName">—</div>
+      </div>
+      <div class="journey-mid">
+        <div class="dur" id="tktDuration">—</div>
+        <div class="track"></div>
+        <div class="train-name" id="tktTrainName">—</div>
+        <div class="train-no" id="tktTrainNo">—</div>
+      </div>
+      <div class="station-block">
+        <div class="time" id="tktArrTime">—</div>
+        <div class="stn-code" id="tktToCode">—</div>
+        <div class="stn-name" id="tktToName">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-row">
+    <div class="meta-cell"><div class="mc-lbl">Date of Journey</div><div class="mc-val" id="tktDate">—</div></div>
+    <div class="meta-cell"><div class="mc-lbl">Class</div><div class="mc-val" id="tktClass">—</div></div>
+    <div class="meta-cell"><div class="mc-lbl">Quota</div><div class="mc-val" id="tktQuota">—</div></div>
+    <div class="meta-cell"><div class="mc-lbl">Passengers</div><div class="mc-val" id="tktPaxCount">—</div></div>
+    <div class="meta-cell"><div class="mc-lbl">Booked By</div><div class="mc-val" id="tktUser">—</div></div>
+  </div>
+
+  <div class="pax-section">
+    <h3>👤 Passenger Details</h3>
+    <table class="pax-table">
+      <thead>
+        <tr><th>#</th><th>Passenger Name</th><th>Age</th><th>Gender</th><th>Berth Pref</th><th>Coach</th><th>Berth No.</th><th>Status</th></tr>
+      </thead>
+      <tbody id="tktPaxBody"></tbody>
+    </table>
+  </div>
+
+  <div class="fare-qr-row">
+    <div class="fare-block">
+      <h3>💰 Fare Details</h3>
+      <div id="fareLines"></div>
+    </div>
+    <div class="qr-block">
+      <div id="qrCode"></div>
+      <p>Scan to verify ticket</p>
+    </div>
+  </div>
+
+  <div class="important-note">
+    ⚠️ <strong>Important:</strong> Carry this e-ticket along with a valid government-issued photo ID (Aadhaar, PAN, Passport, Voter ID, Driving Licence) during travel. Failure to produce ID may result in fine as per Railway rules. This ticket is valid only for the specified date and train.
+  </div>
+
+  <div class="ticket-footer">
+    <div class="booked-at">Booked on: <span id="tktBookedAt">—</span> | Payment: <span id="tktPayment">—</span></div>
+    <div class="helpline">Helpline: 139 | care@irctc.co.in</div>
+  </div>
+</div>
+</div>
+
+<script>
+const API = 'http://localhost:8090/api';
+
+function getParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+}
+
+const CLASS_NAMES = {
+  '1A':'First AC','2A':'AC 2 Tier','3A':'AC 3 Tier',
+  'SL':'Sleeper','CC':'Chair Car','EC':'Exec Chair Car','3E':'AC 3 Economy','2S':'Second Sitting'
+};
+
+async function loadTicket() {
+  // Try to get ticket data from URL param or sessionStorage
+  const pnr = getParam('pnr');
+  const stored = sessionStorage.getItem('lastTicket');
+
+  let ticket = null;
+
+  if (pnr) {
+    try {
+      const res = await fetch(`${API}/ticket/${pnr}`);
+      if (res.ok) ticket = await res.json();
+    } catch(e) {}
+  }
+
+  if (!ticket && stored) {
+    ticket = JSON.parse(stored);
+  }
+
+  if (!ticket) {
+    document.querySelector('.ticket-wrapper').innerHTML = `
+      <div style="text-align:center;padding:60px;background:#fff;border-radius:8px;">
+        <div style="font-size:40px;margin-bottom:12px;">🎫</div>
+        <h3 style="color:#555;">No ticket found</h3>
+        <p style="color:#888;margin-top:8px;">Please complete a booking first.</p>
+        <a href="index.html" style="display:inline-block;margin-top:16px;background:#1a3a6b;color:#fff;padding:10px 24px;border-radius:4px;text-decoration:none;font-weight:700;">Go to Home</a>
+      </div>`;
+    return;
+  }
+
+  renderTicket(ticket);
+
+  // If WL, start timer
+  if (ticket.status === 'WL') {
+    startWLTimer(ticket.pnr, ticket.total_fare);
+  } else if (ticket.status === 'CANCELLED' || ticket.status === 'REFUNDED') {
+    setStatus('CANCELLED');
+    document.getElementById('refundBanner').classList.add('show');
+    document.getElementById('refundAmt').textContent = '₹' + (ticket.refund?.amount || ticket.total_fare);
+    document.getElementById('refundRef').textContent = ticket.refund?.refund_ref || 'REF_PROCESSED';
+    document.getElementById('ticketCard').style.opacity = '0.55';
+    document.getElementById('ticketCard').style.filter = 'grayscale(60%)';
+  } else if (ticket.status === 'CNF') {
+    setStatus('CNF');
+    document.getElementById('confirmBanner').classList.add('show');
+  } else if (ticket.status && ticket.status.startsWith('PARTIAL_CNF')) {
+    setStatus(ticket.status);
+    document.getElementById('confirmBanner').classList.add('show');
+    document.getElementById('refundBanner').classList.add('show');
+    if (ticket.refund) {
+      document.getElementById('refundAmt').textContent = '₹' + ticket.refund.amount;
+      document.getElementById('refundRef').textContent = ticket.refund.refund_ref;
+    }
+  }
+}
+
+function renderTicket(t) {
+  const user = JSON.parse(localStorage.getItem('irctc_user') || '{}');
+
+  document.getElementById('tktPNR').textContent = t.pnr || '—';
+  document.getElementById('tktDepTime').textContent = t.departure || '—';
+  document.getElementById('tktArrTime').textContent = t.arrival || '—';
+  document.getElementById('tktFromCode').textContent = t.from_station || '—';
+  document.getElementById('tktFromName').textContent = t.from_name || '—';
+  document.getElementById('tktToCode').textContent = t.to_station || '—';
+  document.getElementById('tktToName').textContent = t.to_name || '—';
+  document.getElementById('tktDuration').textContent = t.duration || '—';
+  document.getElementById('tktTrainName').textContent = t.train_name || '—';
+  document.getElementById('tktTrainNo').textContent = t.train_no || '—';
+  document.getElementById('tktDate').textContent = formatDate(t.journey_date);
+  document.getElementById('tktClass').textContent = (t.class_code || '—') + (CLASS_NAMES[t.class_code] ? ' – ' + CLASS_NAMES[t.class_code] : '');
+  document.getElementById('tktQuota').textContent = t.quota || 'GN';
+  document.getElementById('tktPaxCount').textContent = (t.passengers || []).length;
+  document.getElementById('tktUser').textContent = user.name || 'Guest';
+  document.getElementById('tktBookedAt').textContent = t.booked_at ? new Date(t.booked_at).toLocaleString('en-IN') : new Date().toLocaleString('en-IN');
+  document.getElementById('tktPayment').textContent = t.payment_method || '—';
+
+  setStatus(t.status);
+
+  // Passengers
+  const tbody = document.getElementById('tktPaxBody');
+  const berthNames = {LB:'Lower',MB:'Middle',UB:'Upper',SL:'Side Lower',SU:'Side Upper',NP:'No Pref',WS:'Window',MS:'Middle',AS:'Aisle'};
+  tbody.innerHTML = (t.passengers || []).map((p,i) => {
+    const isCnf = p.status === 'CNF';
+    const isRef = p.status === 'REFUND_INITIATED' || p.status === 'CANCELLED';
+    const stHtml = isCnf
+      ? '<span style="color:#2e7d32; font-weight:800; background:#e8f5e9; padding:3px 8px; border-radius:3px;">CNF</span>'
+      : (isRef
+          ? '<span style="color:#c62828; font-weight:800; background:#ffebee; padding:3px 8px; border-radius:3px;">REFUND INITIATED</span>'
+          : `<span style="color:#e07b00; font-weight:800; background:#fff3e0; padding:3px 8px; border-radius:3px;">${p.status || 'WL'}</span>`);
+
+    return `
+      <tr style="${isRef ? 'background:#fff8f8;' : ''}">
+        <td>${i+1}</td>
+        <td><strong>${p.pax_name || p.name || 'Passenger '+(i+1)}</strong></td>
+        <td>${p.age}</td>
+        <td>${p.gender === 'M' ? 'Male' : p.gender === 'F' ? 'Female' : 'Other'}</td>
+        <td>${berthNames[p.berth_pref] || p.berth_pref || '—'}</td>
+        <td><strong>${isRef ? '—' : (p.coach || '—')}</strong></td>
+        <td>${isRef ? '—' : (p.berth_no || '—')}</td>
+        <td>${stHtml}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // Fare
+  const fb = t.fare_breakdown || {};
+  const total = t.total_fare || 0;
+  document.getElementById('fareLines').innerHTML = `
+    <div class="fare-line"><span>Base Fare</span><span>₹${fb.base_fare || Math.round(total * 0.75)}</span></div>
+    ${fb.tatkal ? `<div class="fare-line"><span>Tatkal Surcharge</span><span>₹${fb.tatkal}</span></div>` : ''}
+    <div class="fare-line"><span>Reservation Charge</span><span>₹${fb.reservation || 40}</span></div>
+    <div class="fare-line"><span>GST (5%)</span><span>₹${fb.gst || Math.round(total * 0.04)}</span></div>
+    <div class="fare-line"><span>IRCTC Service Fee</span><span>₹${fb.service_fee || 15}</span></div>
+    <div class="fare-total"><span>TOTAL PAID</span><span>₹${total}</span></div>
+  `;
+
+  // QR Code
+  try {
+    new QRCode(document.getElementById('qrCode'), {
+      text: `IRCTC|PNR:${t.pnr}|${t.from_station}-${t.to_station}|${t.journey_date}|${t.total_fare}`,
+      width: 90, height: 90,
+      colorDark: '#1a3a6b', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {}
+}
+
+function setStatus(status) {
+  const badge = document.getElementById('tktStatusBadge');
+  badge.textContent = status;
+  const cleanStatus = (status || 'CNF').split(' ')[0].replace(/[^A-Za-z0-9_]/g, '');
+  badge.className = 'status-badge status-' + (cleanStatus || 'CNF');
+}
+
+let wlInterval;
+function startWLTimer(pnr, fare) {
+  document.getElementById('wlBanner').classList.add('show');
+  let secs = 30;
+
+  const messages = [
+    '⚡ Racing Condition: Competing for limited available seats...',
+    '🔒 Resolving database transaction lock and deadlock contention...',
+    '🔄 Allocating berths across competing passengers queue...',
+    '⚙️ Processing seat assignments for confirmed passengers...',
+    '🚆 Calculating partial refunds for unallocated waitlisted passengers...',
+  ];
+  let msgIdx = 0;
+
+  wlInterval = setInterval(() => {
+    secs--;
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    document.getElementById('timerDisplay').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+    // Rotate messages
+    if (secs % 6 === 0) {
+      msgIdx = (msgIdx + 1) % messages.length;
+      document.getElementById('timerStatus').textContent = messages[msgIdx];
+    }
+
+    if (secs <= 0) {
+      clearInterval(wlInterval);
+      checkWLResult(pnr, fare);
+    }
+  }, 1000);
+}
+
+async function checkWLResult(pnr, fare) {
+  document.getElementById('timerStatus').textContent = '⏳ Finalizing confirmation and refund calculations...';
+
+  try {
+    const res = await fetch(`${API}/wl-confirm`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({pnr})
+    });
+    const data = await res.json();
+    await applyWLResult(data.confirmed, fare, pnr, data);
+  } catch(e) {
+    // Fallback if backend offline
+    const confirmed = Math.random() < 0.5;
+    applyWLResult(confirmed, fare, pnr, {
+      confirmed,
+      confirmed_count: confirmed ? 1 : 0,
+      refunded_count: confirmed ? 0 : 1,
+      refund_ref: 'REF' + Math.floor(Math.random() * 9000000000 + 1000000000),
+      refund_amount: fare
+    });
+  }
+}
+
+async function applyWLResult(confirmed, fare, pnr, data) {
+  document.getElementById('wlBanner').classList.remove('show');
+
+  const confirmedCount = data?.confirmed_count !== undefined ? data.confirmed_count : (confirmed ? 1 : 0);
+  const refundedCount = data?.refunded_count !== undefined ? data.refunded_count : (confirmed ? 0 : 1);
+  const refCode = data?.refund_ref || ('REF' + Math.floor(Math.random() * 9000000000 + 1000000000));
+  const refAmt = data?.refund_amount !== undefined ? data.refund_amount : (confirmed ? 0 : fare);
+
+  // If there are confirmed passengers
+  if (confirmedCount > 0) {
+    document.getElementById('confirmBanner').classList.add('show');
+    if (refundedCount > 0) {
+      document.querySelector('#confirmBanner .cb-title').textContent =
+        `🎉 Concurrency Resolved: ${confirmedCount} Passengers CONFIRMED!`;
+      document.querySelector('#confirmBanner p').textContent =
+        `${confirmedCount} passengers have received confirmed berths. The remaining ${refundedCount} passengers could not be allocated due to seat limits and have received an automated refund below.`;
+      setStatus(`PARTIAL CNF (${confirmedCount}/${confirmedCount + refundedCount})`);
+    } else {
+      document.querySelector('#confirmBanner .cb-title').textContent =
+        `🎉 Congratulations! All Passengers are CONFIRMED!`;
+      setStatus('CNF');
+    }
+  }
+
+  // If there are unallocated / refunded passengers
+  if (refundedCount > 0) {
+    document.getElementById('refundBanner').classList.add('show');
+    document.getElementById('refundAmt').textContent = '₹' + refAmt;
+    document.getElementById('refundRef').textContent = refCode;
+    if (confirmedCount === 0) {
+      setStatus('CANCELLED');
+      document.getElementById('ticketCard').style.opacity = '0.55';
+      document.getElementById('ticketCard').style.filter = 'grayscale(60%)';
+    }
+  }
+
+  // Fetch and re-render fresh ticket from PostgreSQL with all individual passenger statuses & coach/berth numbers!
+  try {
+    const res = await fetch(`${API}/ticket/${pnr}`);
+    if (res.ok) {
+      const freshTicket = await res.json();
+      renderTicket(freshTicket);
+      sessionStorage.setItem('lastTicket', JSON.stringify(freshTicket));
+      return;
+    }
+  } catch(e) {}
+}
+
+// Auto-load
+window.addEventListener('load', loadTicket);
+</script>
+</body>
+</html>
